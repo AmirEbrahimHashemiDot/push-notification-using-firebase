@@ -10,16 +10,31 @@ import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.FirebaseInstanceIdReceiver;
+import com.google.firebase.iid.internal.FirebaseInstanceIdInternal;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingService;
+
+import java.util.Objects;
+
 public class MainActivity extends AppCompatActivity {
 
+    Context context;
+    String myToken;
     private static final int REQUEST_PERMISSION_CODE = 1001;
     CharSequence channelName = "My Notification Channel";
     String channelId = "channel_id";
@@ -29,16 +44,38 @@ public class MainActivity extends AppCompatActivity {
     NotificationChannel notificationChannel;
     NotificationManager notificationManager;
     TextView tvShowAPILevel;
+    TextView tvUserToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        getUserToken();
         setUpViews();
-        checkAPILevelCompatibility();
+
+        //checkAPILevelCompatibility();
+
 
     }
+
+    private void getUserToken() {
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Toast.makeText(this, "Could not get FirebaseMessagingToken", Toast.LENGTH_SHORT).show();
+                    }
+                    if (null != task.getResult()) {
+                        myToken = Objects.requireNonNull(task.getResult());
+                        Toast.makeText(this, "token: " + myToken, Toast.LENGTH_SHORT).show();
+                        Log.i("MY_TOKEN_LOG", "Token: " + myToken);
+                        tvUserToken = findViewById(R.id.tvUserToken);
+                        tvUserToken.setText(myToken);
+                        tvUserToken.setTextIsSelectable(true);
+                    }
+                }
+        );
+    }
+
 
     private void checkAPILevelCompatibility() {
         // <= API 33
@@ -107,6 +144,8 @@ public class MainActivity extends AppCompatActivity {
     private void setUpViews() {
         tvShowAPILevel = findViewById(R.id.tvShowAPILevel);
         tvShowAPILevel.setText("" + Build.VERSION.SDK_INT);
+
+
     }
 
     @Override
